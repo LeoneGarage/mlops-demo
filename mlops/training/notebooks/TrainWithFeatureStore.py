@@ -16,8 +16,8 @@
 
 
 # COMMAND ----------
-# DBTITLE 1, Notebook arguments
 
+# DBTITLE 1, Notebook arguments
 # List of input args needed to run this notebook as a job.
 # Provide them via DB widgets or notebook arguments.
 
@@ -59,28 +59,28 @@ dbutils.widgets.text(
 )
 
 # COMMAND ----------
-# DBTITLE 1,Define input and output variables
 
+# DBTITLE 1,Define input and output variables
 input_table_path = dbutils.widgets.get("training_data_path")
 experiment_name = dbutils.widgets.get("experiment_name")
 model_name = dbutils.widgets.get("model_name")
 
 # COMMAND ----------
-# DBTITLE 1, Set experiment
 
+# DBTITLE 1, Set experiment
 import mlflow
 
 mlflow.set_experiment(experiment_name)
 
 # COMMAND ----------
-# DBTITLE 1, Load raw data
 
+# DBTITLE 1, Load raw data
 raw_data = spark.read.format("delta").load(input_table_path)
 display(raw_data)
 
 # COMMAND ----------
-# DBTITLE 1, Helper functions
 
+# DBTITLE 1, Helper functions
 from pyspark.sql import *
 from pyspark.sql.functions import current_timestamp, to_timestamp, lit
 from pyspark.sql.types import IntegerType, TimestampType
@@ -139,14 +139,14 @@ def get_latest_model_version(model_name):
 
 
 # COMMAND ----------
-# DBTITLE 1, Read taxi data for training
 
+# DBTITLE 1, Read taxi data for training
 taxi_data = rounded_taxi_data(raw_data)
 display(taxi_data)
 
 # COMMAND ----------
-# DBTITLE 1, Create FeatureLookups
 
+# DBTITLE 1, Create FeatureLookups
 from databricks.feature_store import FeatureLookup
 import mlflow
 
@@ -175,8 +175,8 @@ dropoff_feature_lookups = [
 ]
 
 # COMMAND ----------
-# DBTITLE 1, Create Training Dataset
 
+# DBTITLE 1, Create Training Dataset
 from databricks import feature_store
 
 # End any existing runs (in the case this notebook is being run for a second time)
@@ -213,8 +213,8 @@ display(training_df)
 # MAGIC Train a LightGBM model on the data returned by `TrainingSet.to_df`, then log the model with `FeatureStoreClient.log_model`. The model will be packaged with feature metadata.
 
 # COMMAND ----------
-# DBTITLE 1, Train model
 
+# DBTITLE 1, Train model
 from sklearn.model_selection import train_test_split
 from mlflow.tracking import MlflowClient
 import lightgbm as lgb
@@ -237,14 +237,14 @@ train_lgb_dataset = lgb.Dataset(X_train, label=y_train.values)
 test_lgb_dataset = lgb.Dataset(X_test, label=y_test.values)
 
 param = {"num_leaves": 32, "objective": "regression", "metric": "rmse"}
-num_rounds = 100
+num_rounds = 101
 
 # Train a lightGBM model
 model = lgb.train(param, train_lgb_dataset, num_rounds)
 
 # COMMAND ----------
-# DBTITLE 1, Log model and return output.
 
+# DBTITLE 1, Log model and return output.
 # Log the trained model with MLflow and package it with feature lookup information.
 fs.log_model(
     model,
